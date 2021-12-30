@@ -2,11 +2,11 @@ import time
 import pygame
 import random
 import numpy as np
-from .base import BaseEnv
-from .objects.avoid_objects import *
+from base import BaseEnv
+from avoid_objects import *
 
 
-class Avoid2(BaseEnv):
+class Avoid(BaseEnv):
     def __init__(self, screen_width=300, screen_height=400, render=True, **kwargs):
         self.enable_render = render
         self.state_size = [1, 30, 30]

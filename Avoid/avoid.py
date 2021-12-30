@@ -2,8 +2,8 @@ import time
 import pygame
 import random
 import numpy as np
-from .base import BaseEnv
-from .objects.avoid_objects import *
+from base import BaseEnv
+from avoid_objects import *
 
 
 class Avoid(BaseEnv):
