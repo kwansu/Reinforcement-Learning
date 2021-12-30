@@ -2,8 +2,8 @@ import time
 import pygame
 import random
 import numpy as np
-from .base import BaseEnv
-from .objects.othello_objects import Cell
+from base import BaseEnv
+from othello_objects import Cell
 
 
 class Othello(BaseEnv):
@@ -20,7 +20,7 @@ class Othello(BaseEnv):
         self.cell_line = line_count
         self.turn_count = 0
         self.max_turn = self.cell_line ** 2 - 4
-        self.to_black_turn = True
+        self.is_black_turn = True
         self.width = width
         self.height = height
         self.cell_size = (width // self.cell_line, height // self.cell_line)
@@ -29,12 +29,12 @@ class Othello(BaseEnv):
         self.black_putable_list = []
         self.white_putable_list = []
 
-        background = pygame.image.load("./data/background.png")
-        sprite_white = pygame.image.load("./data/othello_stone_white.png")
-        sprite_blakc = pygame.image.load("./data/othello_stone_black.png")
-        sprite_putable_black = pygame.image.load("./data/othello_stone_putable_black.png")
-        sprite_putable_white = pygame.image.load("./data/othello_stone_putable_white.png")
-        back_stone = pygame.image.load("./data/othello_stone_background.png")
+        background = pygame.image.load("./Othello/data/background.png")
+        sprite_white = pygame.image.load("./Othello/data/othello_stone_white.png")
+        sprite_blakc = pygame.image.load("./Othello/data/othello_stone_black.png")
+        sprite_putable_black = pygame.image.load("./Othello/data/othello_stone_putable_black.png")
+        sprite_putable_white = pygame.image.load("./Othello/data/othello_stone_putable_white.png")
+        back_stone = pygame.image.load("./Othello/data/othello_stone_background.png")
 
         self.cells = tuple(
             tuple(Cell((col, row)) for row in range(self.cell_line))
@@ -63,7 +63,7 @@ class Othello(BaseEnv):
 
     def reset(self):
         self.turn_count = 0
-        self.to_black_turn = True
+        self.is_black_turn = True
         self.black_putable_list.clear()
         self.white_putable_list.clear()
 
@@ -76,10 +76,10 @@ class Othello(BaseEnv):
         if self.enable_render:
             self.draw_grid()
 
-        self.put2((3, 3), False)
-        self.put2((4, 4), False)
-        self.put2((3, 4), True)
-        self.put2((4, 3), True)
+        self.put((3, 3), False)
+        self.put((4, 4), False)
+        self.put((3, 4), True)
+        self.put((4, 3), True)
 
         self.state.fill(0)
         self.state[3, 3] = 1
@@ -93,7 +93,7 @@ class Othello(BaseEnv):
         action_pos = divmod(action_pos.max(), 8)  # self.cell_line)
         is_termimal = False
 
-        reward = self.put(action_pos, self.to_black_turn)
+        reward = self.put(action_pos, self.is_black_turn)
         if reward <= 0:
             reward -= 50
             is_termimal = True
@@ -101,10 +101,10 @@ class Othello(BaseEnv):
             if self.enable_render:
                 self.render()
 
-            self.state[action_pos[0], action_pos[1]] = 1 if self.to_black_turn else -1
-            self.to_black_turn = not self.to_black_turn
+            self.state[action_pos[0], action_pos[1]] = 1 if self.is_black_turn else -1
+            self.is_black_turn = not self.is_black_turn
 
-            assert not self.to_black_turn
+            assert not self.is_black_turn
             is_termimal = self.put_random_cell()
 
             if self.turn_count >= self.max_turn:
@@ -178,15 +178,15 @@ class Othello(BaseEnv):
     def add_putable_direction(self, cell: Cell, dir):
         dir_r = 7 - dir
         if cell.get_bit_around_putable() & 1 << dir_r == 0:
-            cell.add_putable_direction(dir_r, cell.to_black)
+            cell.add_putable_direction(dir_r, cell.is_black)
             next_cell: Cell = cell.around_cells[dir]
             if next_cell == None:
                 return
             if next_cell.is_empty:
-                next_cell.add_putable_direction(dir_r, not cell.to_black)
-                self.remove_putablelist_color(next_cell, cell.to_black)
-                self.add_putable_list(next_cell, not cell.to_black)
-            elif next_cell.to_black == cell.to_black:
+                next_cell.add_putable_direction(dir_r, not cell.is_black)
+                self.remove_putablelist_color(next_cell, cell.is_black)
+                self.add_putable_list(next_cell, not cell.is_black)
+            elif next_cell.is_black == cell.is_black:
                 self.add_putable_direction(next_cell, dir)
 
     def remove_putable_direction(self, cell: Cell, dir):
@@ -198,8 +198,8 @@ class Othello(BaseEnv):
                 return
             if next_cell.is_empty:
                 next_cell.remove_putable_direction(dir_r)
-                self.remove_putablelist_color(next_cell, not cell.to_black)
-            elif next_cell.to_black == cell.to_black:
+                self.remove_putablelist_color(next_cell, not cell.is_black)
+            elif next_cell.is_black == cell.is_black:
                 self.remove_putable_direction(next_cell, dir)
 
     def update_putable_list(self, cell: Cell):
@@ -210,14 +210,14 @@ class Othello(BaseEnv):
                 continue
             if next_cell.is_empty:
                 if cell.get_bit_around_putable() & 1 << dir_r != 0:
-                    next_cell.add_putable_direction(dir_r, not cell.to_black)
-                    self.add_putable_list(next_cell, not cell.to_black)
-                    if next_cell.get_bit_around_putable_color(cell.to_black) == 0:
-                        self.remove_putablelist_color(next_cell, cell.to_black)
+                    next_cell.add_putable_direction(dir_r, not cell.is_black)
+                    self.add_putable_list(next_cell, not cell.is_black)
+                    if next_cell.get_bit_around_putable_color(cell.is_black) == 0:
+                        self.remove_putablelist_color(next_cell, cell.is_black)
                 else:
                     next_cell.remove_putable_direction(dir_r)
-                    self.remove_putablelist_color(next_cell, cell.to_black)
-            elif next_cell.to_black == cell.to_black:
+                    self.remove_putablelist_color(next_cell, cell.is_black)
+            elif next_cell.is_black == cell.is_black:
                 if next_cell.get_bit_around_putable() & 1 << dir != 0:
                     self.add_putable_direction(cell, dir_r)
                 if cell.get_bit_around_putable() & 1 << dir_r == 0:
@@ -256,7 +256,7 @@ class Othello(BaseEnv):
         self.draw_cell(cell, to_black)
         self.update_putable_list(cell)
         next_cell: Cell = cell.around_cells[dir]
-        if next_cell.to_black != to_black:
+        if next_cell.is_black != to_black:
             return self.change_color(next_cell, dir, to_black) + 1
         return 1
 
@@ -266,7 +266,7 @@ class Othello(BaseEnv):
         for cols in self.cells:
             for cell in cols:
                 if cell.is_empty == False:
-                    if cell.to_black:
+                    if cell.is_black:
                         black_count += 1
                     else:
                         white_count += 1
@@ -275,7 +275,7 @@ class Othello(BaseEnv):
 
     def get_put_randomable_pos(self):
         putable_list = (
-            self.black_putable_list if self.to_black_turn else self.white_putable_list
+            self.black_putable_list if self.is_black_turn else self.white_putable_list
         )
         return random.choice(putable_list).pos
 
@@ -283,7 +283,7 @@ class Othello(BaseEnv):
         self.turn_count += 1
         reward = 0
         putable_list = (
-            self.black_putable_list if self.to_black_turn else self.white_putable_list
+            self.black_putable_list if self.is_black_turn else self.white_putable_list
         )
 
         # if len(putable_list) == 0:
@@ -291,23 +291,23 @@ class Othello(BaseEnv):
         #     return
         if putable_list:
             random_cell = random.choice(putable_list)
-            reward = self.put(random_cell.pos, self.to_black_turn)
+            reward = self.put(random_cell.pos, self.is_black_turn)
         # if reward <= 0:
         #     self.reset()
         #     return
 
-        self.to_black_turn = not self.to_black_turn
+        self.is_black_turn = not self.is_black_turn
         return reward <= 0
 
     def put_cell(self, put_pos):
-        reward = self.put2(put_pos, self.to_black_turn)
+        reward = self.put(put_pos, self.is_black_turn)
         if reward <= 0:
             self.reset()
             return
 
-        self.to_black_turn = not self.to_black_turn
+        self.is_black_turn = not self.is_black_turn
         putable_list = (
-            self.black_putable_list if self.to_black_turn else self.white_putable_list
+            self.black_putable_list if self.is_black_turn else self.white_putable_list
         )
         if len(putable_list) == 0:
             self.reset()

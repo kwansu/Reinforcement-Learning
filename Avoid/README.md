@@ -15,5 +15,7 @@ python single_train.py --config config.dqn.avoid --env.avoid2
 ```
 
 ## 학습결과
-- eavl로 explor없이 실행
+- eavl로 explor없이 실행  
+
+
 ![avoid](https://user-images.githubusercontent.com/15683086/147727426-8fb03e59-6ece-4a5d-b1c3-01918f02be82.gif)

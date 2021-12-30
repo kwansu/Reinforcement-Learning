@@ -24,10 +24,10 @@ class Avoid(BaseEnv):
         self.width_rate = screen_width / self.width
         self.height_rate = screen_height / self.height
         
-        player_sprite = pygame.image.load("./data/player.png")
-        poop_sprite = pygame.image.load("./data/poop.png")
-        star_sprite = pygame.image.load("./data/star.png")
-        background = pygame.image.load("./data/background_avoid.png")
+        player_sprite = pygame.image.load("./Avoid/data/player.png")
+        poop_sprite = pygame.image.load("./Avoid/data/poop.png")
+        star_sprite = pygame.image.load("./Avoid/data/star.png")
+        background = pygame.image.load("./Avoid/data/background_avoid.png")
 
         self.player = Player(sprite=player_sprite)
         self.falling_objs = [FallingObject(poop_sprite) for _ in range(4)]

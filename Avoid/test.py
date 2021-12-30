@@ -7,7 +7,7 @@ from avoid2 import Avoid
 width = 300
 height = 400
 
-model = keras.models.load_model("models/avoidPoop_cnn.h5")
+model = keras.models.load_model("./Avoid/models/avoidPoop_cnn.h5")
 env = Avoid(width, height)
 
 stepSum = 0
