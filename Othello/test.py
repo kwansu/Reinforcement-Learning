@@ -22,6 +22,6 @@ while isRunning:
             env.put_click_pos(list(event.pos))
 
     pygame.display.update()
-    sleep(0.02)
+    sleep(0.01)
 
 pygame.quit()
