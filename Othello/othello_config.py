@@ -9,7 +9,6 @@ env = {
 
 agent = {
     "name": "dqn_othello",
-    "network": "dqn",
     "head": "cnn_othello",
     "hidden_size": 512,
     "gamma": 0.99,
