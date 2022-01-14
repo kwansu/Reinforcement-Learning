@@ -9,8 +9,8 @@ class Cell:
         self.bit_around_black = 0  # 주변 8방향으로 둘 수 있는지를 비트 단위로 저장
         self.bit_around_white = 0
         self.around_cells = [None for i in range(8)]
-        self.around_black = np.zeros(8, dtype=np.int8)
-        self.around_white = np.zeros(8, dtype=np.int8)
+        self.around_black = np.zeros(8, dtype=bool)
+        self.around_white = np.zeros(8, dtype=bool)
 
     def get_putable(self, to_black):
         return self.bit_around_white if to_black else self.bit_around_black != 0
@@ -21,8 +21,16 @@ class Cell:
     def get_bit_around_putable_color(self, to_black):
         return self.bit_around_white if to_black else self.bit_around_black
 
-    def update_from_direction(self, dir, to_black):
-        pass
+    def update_from_direction(self, dir, to_black, opposite_blocked):
+        if self.is_empty:
+            if to_black:
+                self.around_black[dir] = False
+                self.around_white[dir] = opposite_blocked
+            else:
+                self.around_white[dir] = False
+                self.around_black[dir] = opposite_blocked
+        elif self.is_black != to_black and self.around_cells[dir]:
+            self.around_cells[dir].update_from_direction(dir, to_black, opposite_blocked)
 
     def add_putable_direction(self, dir, to_black):
         bitInfo = 1 << dir
