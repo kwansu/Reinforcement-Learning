@@ -65,30 +65,19 @@ class Othello(BaseEnv):
         if cell.is_empty == False:
             return 0
 
-        total_changed = 0
-        total_changed += self.update_cell(cell)
-        for to_dir in range(8):
-            cell.around_cells[dir]
-            changed = self.change_color_to_direction(cell, to_black, to_dir)
-            total_changed += changed
-
-        return total_changed
-
-    def change_color_to_direction(self, cell: Cell, to_black, to_dir):
+        cell.set_color(to_black)
         changed_count = 0
-        self.update_cell()
-
-        next_cell = cell.around_cells[to_dir]
-        if next_cell:
+        for to_dir in range(8):
+            next_cell = cell.around_cells[to_dir]
             changed_count += self.change_color_to_direction(next_cell, to_black, to_dir)
+
         return changed_count
 
-    def _change_color(self, cell: Cell):
-        pass
+    def change_color_to_direction(self, cell: Cell, to_black, to_dir):
+        if cell == None or cell.is_empty or cell.is_black == to_black:
+            return 0
 
-    def update_cell(self, cell: Cell):
-        if cell == None:
-            return
+        cell.set_color(to_black)
 
-        if cell.is_empty:
-            cell.bit_around_black
+        next_cell = cell.around_cells[to_dir]
+        return self.change_color_to_direction(next_cell, to_black, to_dir) + 1
