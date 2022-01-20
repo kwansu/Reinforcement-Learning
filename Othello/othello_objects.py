@@ -21,29 +21,24 @@ class Cell:
     def get_bit_around_putable_color(self, to_black):
         return self.bit_around_white if to_black else self.bit_around_black
 
-    def update_from_direction(self, dir, before_black, opposite_blocked):
-        if before_black:
+    def update_from_direction(self, dir, to_black, opposite_blocked):
+        if to_black:
             before_around, opposite_around = self.around_black, self.around_white
         else:
             opposite_around, before_around = self.around_white, self.around_black
 
-        # empty 일 경우
-        if self.is_empty:
-            pass
-            #before_around = 
+        before_around[dir - 7] = False
+        opposite_around[dir - 7] = opposite_blocked
+        next_cell: Cell = self.around_cells[dir]
+        if self.is_empty == False and next_cell and next_cell.is_black == to_black:
+            next_cell.update_from_direction(dir, to_black, opposite_blocked)
 
-        if self.is_black:
-            self.around_black[7-dir] = False
-            self.around_white[7-dir] = opposite_blocked
-        else:
-            self.around_white[7-dir] = False
-            self.around_black[7-dir] = opposite_blocked
-
-        if self.is_empty:
-            return
-
-        if to_black and self.around_cells[dir]:
-            self.around_cells[dir].update_from_direction(dir, to_black, opposite_blocked)
+    def set_color(self, to_black):
+        self.is_black = to_black
+        for dir in range(4):
+            dir_r = 7 - dir
+            self.around_cells[dir]
+        pass
 
     def add_putable_direction(self, dir, to_black):
         bitInfo = 1 << dir
