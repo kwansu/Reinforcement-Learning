@@ -33,6 +33,9 @@ class Othello(BaseEnv):
         sprite_putable_black = pygame.image.load("./Othello/data/othello_stone_putable_black.png")
         sprite_putable_white = pygame.image.load("./Othello/data/othello_stone_putable_white.png")
         back_stone = pygame.image.load("./Othello/data/othello_stone_background.png")
+        self.sprite_0 = pygame.image.load("./Othello/data/red.png")
+        self.sprite_1 = pygame.image.load("./Othello/data/green.png")
+        self.sprite_2 = pygame.image.load("./Othello/data/yellow.png")
 
         self.cells = tuple(
             tuple(Cell((col, row)) for row in range(self.cell_line))
@@ -56,6 +59,45 @@ class Othello(BaseEnv):
             self.previous_time = 0.0
             self.framerate = 0.05
 
+        half = self.cell_size[0] // 2
+        self.info_offsets = ((-half, -half), 
+                            (0, -half),
+                            (half, -half),
+                            (-half, 0),
+                            (half, 0),
+                            (-half, half),
+                            (0, half),
+                            (half, half))
+
+    def reset(self):
+        self.turn_count = 0
+        self.is_black_turn = True
+        self.black_putable_list.clear()
+        self.white_putable_list.clear()
+
+        for cols in self.cells:
+            for cell in cols:
+                cell.is_empty = True
+                cell.around_infos.fill(0)
+
+        if self.enable_render:
+            self.draw_grid()
+
+        self.put((3, 3), False)
+        self.put((4, 4), False)
+        self.put((3, 4), True)
+        self.put((4, 3), True)
+
+        # self.state.fill(0)
+        # self.state[3, 3] = 1
+        # self.state[4, 4] = 1
+        # self.state[3, 4] = -1
+        # self.state[4, 3] = -1
+        # return np.copy(self.state).reshape([1, 1, 8, 8])
+
+    def step(self, action):
+        return super().step(action)
+
     def close(self):
         pygame.quit()
 
@@ -66,6 +108,8 @@ class Othello(BaseEnv):
             return 0
 
         cell.set_color(to_black)
+        self.draw_cell(cell, to_black)
+
         changed_count = 0
         for to_dir in range(8):
             next_cell = cell.around_cells[to_dir]
@@ -78,6 +122,47 @@ class Othello(BaseEnv):
             return 0
 
         cell.set_color(to_black)
+        self.draw_cell(cell, to_black)
 
         next_cell = cell.around_cells[to_dir]
         return self.change_color_to_direction(next_cell, to_black, to_dir) + 1
+
+    def draw_grid(self):
+        self.window.blit(self.background, (0, 0))
+        for x in range(0, self.width, self.cell_size[0]):
+            pygame.draw.line(self.window, (0, 0, 0, 50), (x, 0), (x, self.height))
+        for y in range(0, self.height, self.cell_size[1]):
+            pygame.draw.line(self.window, (0, 0, 0, 50), (0, y), (self.width, y))
+
+    def draw_cell(self, cell: Cell, to_black):
+        cell.is_black = to_black
+
+        if self.enable_render == False:
+            return
+        if to_black:
+            self.window.blit(self.sprite_blakc, cell.pos * self.cell_size)
+        else:
+            self.window.blit(self.sprite_white, cell.pos * self.cell_size)
+
+    def draw_cell_info(self, cell: Cell):
+        #self.window.blit(self.back_stone, cell.pos * self.cell_size)
+        for dir in range(8):
+            if cell.around_infos[dir] == 0:
+                sprite = self.sprite_0
+            elif cell.around_infos[dir] == 1:
+                sprite = self.sprite_1
+            else:
+                sprite = self.sprite_2
+            self.window.blit(sprite, cell.pos * self.cell_size + self.info_offsets[dir])
+
+    def put_click_pos(self, pos):
+        if pos == None:
+            return
+        if pos[0] < 0 or pos[1] < 0 or pos[0] > self.width or pos[1] > self.height:
+            return
+
+        put_pos = (int(pos[0] / self.cell_size[0]), int(pos[1] / self.cell_size[1]))
+        if self.put(put_pos, self.is_black_turn) > 0:
+            self.is_black_turn = not self.is_black_turn
+        else:
+            self.reset()

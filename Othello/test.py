@@ -1,5 +1,5 @@
 from time import sleep
-from othello import Othello
+from othello2 import Othello
 import pygame
 import numpy as np
 
