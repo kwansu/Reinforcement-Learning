@@ -108,7 +108,6 @@ class Othello(BaseEnv):
             return 0
 
         cell.set_color(to_black)
-        self.draw_cell(cell, to_black)
 
         changed_count = 0
         for to_dir in range(8):
@@ -144,16 +143,15 @@ class Othello(BaseEnv):
         else:
             self.window.blit(self.sprite_white, cell.pos * self.cell_size)
 
-    def draw_cell_info(self, cell: Cell):
+    def draw_cell_info(self, cell: Cell, dir):
         #self.window.blit(self.back_stone, cell.pos * self.cell_size)
-        for dir in range(8):
-            if cell.around_infos[dir] == 0:
-                sprite = self.sprite_0
-            elif cell.around_infos[dir] == 1:
-                sprite = self.sprite_1
-            else:
-                sprite = self.sprite_2
-            self.window.blit(sprite, cell.pos * self.cell_size + self.info_offsets[dir])
+        if cell.around_infos[dir] == 0:
+            sprite = self.sprite_0
+        elif cell.around_infos[dir] == 1:
+            sprite = self.sprite_1
+        else:
+            sprite = self.sprite_2
+        self.window.blit(sprite, cell.pos * self.cell_size + self.info_offsets[dir])
 
     def put_click_pos(self, pos):
         if pos == None:
@@ -166,3 +164,38 @@ class Othello(BaseEnv):
             self.is_black_turn = not self.is_black_turn
         else:
             self.reset()
+
+    def set_color(self, cell: Cell, to_black):
+        cell.is_black = to_black
+
+        for dir in range(4):
+            dir_r = 7 - dir
+            r_cell = cell.around_cells[dir]
+            if r_cell and r_cell.is_empty == False:
+                if r_cell.is_black != cell.is_black:
+                    cell.around_infos[dir] = 1 if cell.is_black else 2
+                else:
+                    cell.around_infos[dir] = r_cell.around_infos[dir]
+            l_cell = cell.around_cells[dir_r]
+            if l_cell and l_cell.is_empty == False:
+                if l_cell.is_black != cell.is_black:
+                    cell.around_infos[dir_r] = 1 if cell.is_black else 2
+                else:
+                    cell.around_infos[dir_r] = l_cell.around_infos[dir_r]
+
+            self.update_to_direction(r_cell, cell, dir)
+            self.update_to_direction(l_cell, cell, dir_r)
+
+    def update_to_direction(self, cell: Cell, before_cell: Cell, dir):
+        if cell == None:
+            return
+        dir_r = 7-dir
+        if cell.is_empty:
+            info = before_cell.around_infos[dir_r]
+            if info > 0:
+                cell.around_infos[dir_r] = info
+                self.draw_cell_info(cell, dir_r)
+        elif before_cell.is_black == cell.is_black:
+            self.update_to_direction(cell.around_cells[dir], cell, dir)
+        else:
+            pass
