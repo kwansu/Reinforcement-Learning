@@ -115,7 +115,6 @@ class Othello(BaseEnv):
                 changed_count += self.change_color_to_direction(next_cell, to_black, to_dir)
 
         self.set_color(cell, to_black)
-
         return changed_count
 
     def change_color_to_direction(self, cell: Cell, to_black, to_dir):

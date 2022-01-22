@@ -34,29 +34,6 @@ class Cell:
         if self.is_empty == False and next_cell and next_cell.is_black == to_black:
             next_cell.update_from_direction(dir, to_black, opposite_blocked)
 
-    def set_color(self, to_black):
-        self.is_black = to_black
-
-        for dir in range(4):
-            dir_r = 7 - dir
-            r_cell = self.around_cells[dir]
-            if r_cell and r_cell.is_empty == False:
-                if r_cell.is_black != self.is_black:
-                    self.around_infos[dir] = 1 if self.is_black else 2
-                else:
-                    self.around_infos[dir] = r_cell.around_infos[dir]
-            l_cell = self.around_cells[dir_r]
-            if l_cell and l_cell.is_empty == False:
-                if l_cell.is_black != self.is_black:
-                    self.around_infos[dir_r] = 1 if self.is_black else 2
-                else:
-                    self.around_infos[dir_r] = l_cell.around_infos[dir_r]
-
-    def update_to_direction2(self, dir, before_black, info):
-        self.around_infos[7-dir] = info
-        if self.is_empty == False:
-            self.update_to_direction2(dir, self.is_black, )
-
     def add_putable_direction(self, dir, to_black):
         bitInfo = 1 << dir
         if to_black:
