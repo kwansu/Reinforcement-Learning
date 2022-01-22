@@ -36,6 +36,7 @@ class Cell:
 
     def set_color(self, to_black):
         self.is_black = to_black
+
         for dir in range(4):
             dir_r = 7 - dir
             r_cell = self.around_cells[dir]
