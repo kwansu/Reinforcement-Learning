@@ -2,7 +2,7 @@ import pygame
 import random
 import numpy as np
 from base import BaseEnv
-from othello_objects import Cell
+from othello_objects2 import Cell
 
 
 class Othello(BaseEnv):
@@ -78,7 +78,10 @@ class Othello(BaseEnv):
         for cols in self.cells:
             for cell in cols:
                 cell.is_empty = True
-                cell.around_infos.fill(0)
+                cell.around_black.putable = 0
+                cell.around_white.putable = 0
+                # cell.around_white.fill(0)
+                # cell.around_black.fill(0)
 
         if self.enable_render:
             self.draw_grid()
@@ -107,10 +110,10 @@ class Othello(BaseEnv):
         if cell.is_empty == False:
             return 0
 
-        putable_num = 1 if to_black else 2
+        aroun_info = cell.around_black if to_black else cell.around_white
         changed_count = 0
         for to_dir in range(8):
-            if cell.around_infos[to_dir] == putable_num:
+            if aroun_info.dir[to_dir]:
                 next_cell = cell.around_cells[to_dir]
                 changed_count += self.change_color_to_direction(next_cell, to_black, to_dir)
 
@@ -148,15 +151,21 @@ class Othello(BaseEnv):
             r_cell: Cell = cell.around_cells[dir]
             if r_cell and r_cell.is_empty == False:
                 if r_cell.is_black != cell.is_black:
-                    cell.around_infos[dir] = 2 if cell.is_black else 1
+                    # cell.around_infos.dir[dir] = 2 if cell.is_black else 1
+                    cell.set_direction_info(dir)
                 else:
-                    cell.around_infos[dir] = r_cell.around_infos[dir]
+                    # cell.copy_direction_info(dir, r_cell)
+                    cell.around_black.dir[dir] = r_cell.around_black.dir[dir]
+                    cell.around_white.dir[dir] = r_cell.around_white.dir[dir]
             l_cell: Cell = cell.around_cells[dir_r]
             if l_cell and l_cell.is_empty == False:
                 if l_cell.is_black != cell.is_black:
-                    cell.around_infos[dir_r] = 2 if cell.is_black else 1
+                    # cell.around_infos.dir[dir_r] = 2 if cell.is_black else 1
+                    cell.set_direction_info(dir_r)
                 else:
-                    cell.around_infos[dir_r] = l_cell.around_infos[dir_r]
+                    # cell.around_infos.dir[dir_r] = l_cell.around_infos.dir[dir_r]
+                    cell.around_black.dir[dir_r] = l_cell.around_black.dir[dir_r]
+                    cell.around_white.dir[dir_r] = l_cell.around_white.dir[dir_r]
 
             self.draw_cell_info(cell, dir)
             self.draw_cell_info(cell, dir_r)
@@ -168,16 +177,23 @@ class Othello(BaseEnv):
             return
         dir_r = 7-dir
         if cell.is_empty:
-            cell.around_infos[dir_r] = before_cell.around_infos[dir_r]
+            # cell.around_infos.dir[dir_r] = before_cell.around_infos.dir[dir_r]
+            cell.around_black.dir[dir_r] = before_cell.around_black.dir[dir_r]
+            cell.around_white.dir[dir_r] = before_cell.around_white.dir[dir_r]
             self.draw_cell_info(cell, dir_r)
         elif before_cell.is_black == cell.is_black:
-            cell.around_infos[dir_r] = before_cell.around_infos[dir_r]
+            # cell.around_infos.dir[dir_r] = before_cell.around_infos.dir[dir_r]
+            cell.around_black.dir[dir_r] = before_cell.around_black.dir[dir_r]
+            cell.around_white.dir[dir_r] = before_cell.around_white.dir[dir_r]
             self.draw_cell_info(cell, dir_r)
             self.update_to_direction(cell.around_cells[dir], cell, dir)
         else:
-            info = 2 if cell.is_black else 1
-            if info != cell.around_infos[dir_r]:
-                cell.around_infos[dir_r] = info
+            # info = 2 if cell.is_black else 1
+            # if info != cell.around_infos.dir[dir_r]:
+            around_info = cell.around_white if cell.is_black else cell.around_black
+            if around_info.dir[dir_r] == False:
+                # cell.around_infos.dir[dir_r] = info
+                cell.set_direction_info(dir_r)
                 self.draw_cell_info(cell, dir_r)
                 self.update_to_direction(cell.around_cells[dir], cell, dir)
 
@@ -197,10 +213,10 @@ class Othello(BaseEnv):
             self.window.blit(self.sprite_white, cell.pos * self.cell_size)
 
     def draw_cell_info(self, cell: Cell, dir):
-        if cell.around_infos[dir] == 0:
-            sprite = self.sprite_0
-        elif cell.around_infos[dir] == 1:
+        if cell.around_black.dir[dir]:
             sprite = self.sprite_1
-        else:
+        elif cell.around_white.dir[dir]:
             sprite = self.sprite_2
+        else:
+            sprite = self.sprite_0
         self.window.blit(sprite, cell.pos * self.cell_size + self.info_offsets[dir])
