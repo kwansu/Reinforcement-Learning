@@ -24,8 +24,8 @@ class Othello(BaseEnv):
         self.cell_size = (width // self.cell_line, height // self.cell_line)
         self.around_changed = np.zeros(8, dtype=np.int8)
 
-        self.black_putable_list = []
-        self.white_putable_list = []
+        self.black_putable_list = set()
+        self.white_putable_list = set()
 
         background = pygame.image.load("./Othello/data/background.png")
         sprite_white = pygame.image.load("./Othello/data/othello_stone_white.png")
@@ -104,11 +104,15 @@ class Othello(BaseEnv):
     def close(self):
         pygame.quit()
 
-    def put(self, pos, to_black):
+    def put(self, pos, to_black, remove_putable=False):
         cell: Cell = self.cells[pos[0]][pos[1]]
 
         if cell.is_empty == False:
             return 0
+
+        if remove_putable:
+            putable_list = self.black_putable_list if to_black else self.white_putable_list
+            putable_list.remove(cell)
 
         aroun_info = cell.around_black if to_black else cell.around_white
         changed_count = 0
@@ -136,7 +140,7 @@ class Othello(BaseEnv):
             return
 
         put_pos = (int(pos[0] / self.cell_size[0]), int(pos[1] / self.cell_size[1]))
-        if self.put(put_pos, self.is_black_turn) > 0:
+        if self.put(put_pos, self.is_black_turn, True) > 0:
             self.is_black_turn = not self.is_black_turn
         else:
             self.reset()
@@ -178,8 +182,20 @@ class Othello(BaseEnv):
         dir_r = 7-dir
         if cell.is_empty:
             # cell.around_infos.dir[dir_r] = before_cell.around_infos.dir[dir_r]
+            putable_black = cell.around_black.putable > 0
+            putable_white = cell.around_white.putable > 0
             cell.around_black.dir[dir_r] = before_cell.around_black.dir[dir_r]
             cell.around_white.dir[dir_r] = before_cell.around_white.dir[dir_r]
+            if putable_black != cell.around_black.putable > 0:
+                if putable_black:
+                    self.black_putable_list.remove(cell)
+                else:
+                    self.black_putable_list.add(cell)
+            if putable_white != cell.around_white.putable > 0:
+                if putable_white:
+                    self.white_putable_list.remove(cell)
+                else:
+                    self.white_putable_list.add(cell)
             self.draw_cell_info(cell, dir_r)
         elif before_cell.is_black == cell.is_black:
             # cell.around_infos.dir[dir_r] = before_cell.around_infos.dir[dir_r]
@@ -215,6 +231,8 @@ class Othello(BaseEnv):
     def draw_cell_info(self, cell: Cell, dir):
         if cell.around_black.dir[dir]:
             sprite = self.sprite_1
+            if cell.is_empty:
+                a = 10
         elif cell.around_white.dir[dir]:
             sprite = self.sprite_2
         else:

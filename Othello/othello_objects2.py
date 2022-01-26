@@ -10,14 +10,9 @@ class Cell:
         self.pos = np.array(pos)
         self.is_empty = True
         self.is_black = False
-        self.putable_black = False
-        self.putable_white = False
         self.around_cells = [None for i in range(8)]
         self.around_black = self.around_info()
         self.around_white = self.around_info()
-
-    def update_putable(self, before_black):
-        pass
 
     def set_enable_direction_info(self, dir, is_black):
         if is_black:
