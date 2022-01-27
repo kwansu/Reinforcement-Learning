@@ -9,6 +9,9 @@ height = 320
 env = Othello(width, height, True)
 env.reset()
 
+for _ in range(10000):
+    env.put_random_cell()
+
 isRunning = True
 while isRunning:
     for event in pygame.event.get():

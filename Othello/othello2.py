@@ -16,7 +16,7 @@ class Othello(BaseEnv):
 
         self.state = np.zeros([line_count, line_count], dtype=np.int8)
         self.cell_line = line_count
-        self.turn_count = 0
+        self.turn_count = 64
         self.max_turn = self.cell_line ** 2 - 4
         self.is_black_turn = True
         self.width = width
@@ -24,14 +24,13 @@ class Othello(BaseEnv):
         self.cell_size = (width // self.cell_line, height // self.cell_line)
         self.around_changed = np.zeros(8, dtype=np.int8)
 
-        self.black_putable_list = set()
-        self.white_putable_list = set()
+        self.put_cell = None
+        self.black_putable = set()
+        self.white_putable = set()
 
         background = pygame.image.load("./Othello/data/background.png")
         sprite_white = pygame.image.load("./Othello/data/othello_stone_white.png")
         sprite_blakc = pygame.image.load("./Othello/data/othello_stone_black.png")
-        sprite_putable_black = pygame.image.load("./Othello/data/othello_stone_putable_black.png")
-        sprite_putable_white = pygame.image.load("./Othello/data/othello_stone_putable_white.png")
         back_stone = pygame.image.load("./Othello/data/othello_stone_background.png")
         self.sprite_0 = pygame.image.load("./Othello/data/red.png")
         self.sprite_1 = pygame.image.load("./Othello/data/green.png")
@@ -52,36 +51,34 @@ class Othello(BaseEnv):
 
             self.sprite_white = sprite_white
             self.sprite_blakc = sprite_blakc
-            self.sprite_putable_black = sprite_putable_black
-            self.sprite_putable_white = sprite_putable_white
             self.back_stone = back_stone
             self.background = background
             self.previous_time = 0.0
             self.framerate = 0.05
 
         half = self.cell_size[0] // 2 - 5
-        self.info_offsets = ((0, 0), 
-                            (half, 0),
-                            (half*2, 0),
-                            (0, half),
-                            (half*2, half),
-                            (0, half*2),
-                            (half, half*2),
-                            (half*2, half*2))
+        self.info_offsets = (
+            (0, 0),
+            (half, 0),
+            (half * 2, 0),
+            (0, half),
+            (half * 2, half),
+            (0, half * 2),
+            (half, half * 2),
+            (half * 2, half * 2),
+        )
 
     def reset(self):
         self.turn_count = 0
         self.is_black_turn = True
-        self.black_putable_list.clear()
-        self.white_putable_list.clear()
+        self.black_putable.clear()
+        self.white_putable.clear()
 
         for cols in self.cells:
             for cell in cols:
                 cell.is_empty = True
-                cell.around_black.putable = 0
-                cell.around_white.putable = 0
-                # cell.around_white.fill(0)
-                # cell.around_black.fill(0)
+                cell.around_black.all = 0
+                cell.around_white.all = 0
 
         if self.enable_render:
             self.draw_grid()
@@ -104,26 +101,6 @@ class Othello(BaseEnv):
     def close(self):
         pygame.quit()
 
-    def put(self, pos, to_black, remove_putable=False):
-        cell: Cell = self.cells[pos[0]][pos[1]]
-
-        if cell.is_empty == False:
-            return 0
-
-        if remove_putable:
-            putable_list = self.black_putable_list if to_black else self.white_putable_list
-            putable_list.remove(cell)
-
-        aroun_info = cell.around_black if to_black else cell.around_white
-        changed_count = 0
-        for to_dir in range(8):
-            if aroun_info.dir[to_dir]:
-                next_cell = cell.around_cells[to_dir]
-                changed_count += self.change_color_to_direction(next_cell, to_black, to_dir)
-
-        self.set_color(cell, to_black)
-        return changed_count
-
     def change_color_to_direction(self, cell: Cell, to_black, to_dir):
         if cell.is_black == to_black:
             return 0
@@ -132,18 +109,6 @@ class Othello(BaseEnv):
 
         next_cell = cell.around_cells[to_dir]
         return self.change_color_to_direction(next_cell, to_black, to_dir) + 1
-
-    def put_click_pos(self, pos):
-        if pos == None:
-            return
-        if pos[0] < 0 or pos[1] < 0 or pos[0] > self.width or pos[1] > self.height:
-            return
-
-        put_pos = (int(pos[0] / self.cell_size[0]), int(pos[1] / self.cell_size[1]))
-        if self.put(put_pos, self.is_black_turn, True) > 0:
-            self.is_black_turn = not self.is_black_turn
-        else:
-            self.reset()
 
     def set_color(self, cell: Cell, to_black):
         cell.is_black = to_black
@@ -159,8 +124,7 @@ class Othello(BaseEnv):
                     cell.set_direction_info(dir)
                 else:
                     # cell.copy_direction_info(dir, r_cell)
-                    cell.around_black.dir[dir] = r_cell.around_black.dir[dir]
-                    cell.around_white.dir[dir] = r_cell.around_white.dir[dir]
+                    cell.copy_direction_info(dir, r_cell)
             l_cell: Cell = cell.around_cells[dir_r]
             if l_cell and l_cell.is_empty == False:
                 if l_cell.is_black != cell.is_black:
@@ -168,50 +132,105 @@ class Othello(BaseEnv):
                     cell.set_direction_info(dir_r)
                 else:
                     # cell.around_infos.dir[dir_r] = l_cell.around_infos.dir[dir_r]
-                    cell.around_black.dir[dir_r] = l_cell.around_black.dir[dir_r]
-                    cell.around_white.dir[dir_r] = l_cell.around_white.dir[dir_r]
+                    cell.copy_direction_info(dir_r, l_cell)
 
-            self.draw_cell_info(cell, dir)
-            self.draw_cell_info(cell, dir_r)
+            # self.draw_cell_info(cell, dir)
+            # self.draw_cell_info(cell, dir_r)
             self.update_to_direction(r_cell, cell, dir)
             self.update_to_direction(l_cell, cell, dir_r)
 
     def update_to_direction(self, cell: Cell, before_cell: Cell, dir):
         if cell == None:
             return
-        dir_r = 7-dir
+        dir_r = 7 - dir
         if cell.is_empty:
             # cell.around_infos.dir[dir_r] = before_cell.around_infos.dir[dir_r]
-            putable_black = cell.around_black.putable > 0
-            putable_white = cell.around_white.putable > 0
-            cell.around_black.dir[dir_r] = before_cell.around_black.dir[dir_r]
-            cell.around_white.dir[dir_r] = before_cell.around_white.dir[dir_r]
-            if putable_black != cell.around_black.putable > 0:
-                if putable_black:
-                    self.black_putable_list.remove(cell)
-                else:
-                    self.black_putable_list.add(cell)
-            if putable_white != cell.around_white.putable > 0:
-                if putable_white:
-                    self.white_putable_list.remove(cell)
-                else:
-                    self.white_putable_list.add(cell)
-            self.draw_cell_info(cell, dir_r)
+            putable_black = cell.around_black.all != 0
+            putable_white = cell.around_white.all != 0
+            cell.copy_direction_info(dir_r, before_cell)
+            if self.put_cell != cell:
+                if putable_black != (cell.around_black.all != 0):
+                    if putable_black:
+                        self.black_putable.remove(cell)
+                    else:
+                        self.black_putable.add(cell)
+                if putable_white != (cell.around_white.all != 0):
+                    if putable_white:
+                        self.white_putable.remove(cell)
+                    else:
+                        self.white_putable.add(cell)
+            # self.draw_cell_info(cell, dir_r)
         elif before_cell.is_black == cell.is_black:
             # cell.around_infos.dir[dir_r] = before_cell.around_infos.dir[dir_r]
-            cell.around_black.dir[dir_r] = before_cell.around_black.dir[dir_r]
-            cell.around_white.dir[dir_r] = before_cell.around_white.dir[dir_r]
-            self.draw_cell_info(cell, dir_r)
+            cell.copy_direction_info(dir_r, before_cell)
+            # self.draw_cell_info(cell, dir_r)
             self.update_to_direction(cell.around_cells[dir], cell, dir)
         else:
             # info = 2 if cell.is_black else 1
             # if info != cell.around_infos.dir[dir_r]:
             around_info = cell.around_white if cell.is_black else cell.around_black
-            if around_info.dir[dir_r] == False:
+            # if around_info & (1 << dir_r) == 0:
+            if around_info.bit[dir_r] == False:
                 # cell.around_infos.dir[dir_r] = info
                 cell.set_direction_info(dir_r)
-                self.draw_cell_info(cell, dir_r)
+                # self.draw_cell_info(cell, dir_r)
                 self.update_to_direction(cell.around_cells[dir], cell, dir)
+
+    def put_to_cell(self, cell: Cell, to_black, remove_putable=True):
+        if cell.is_empty == False:
+            return 0
+
+        self.turn_count += 1
+
+        if remove_putable:
+            if to_black:
+                self.black_putable.remove(cell)
+                if cell.around_white.all != 0:
+                    self.white_putable.remove(cell)
+            else:
+                self.white_putable.remove(cell)
+                if cell.around_black.all != 0:
+                    self.black_putable.remove(cell)
+            self.put_cell = cell
+
+        around_info = cell.around_black if to_black else cell.around_white
+        count = 0
+        for to_dir in range(8):
+            # if around_info & (1 << to_dir):
+            if around_info.bit[to_dir]:
+                next_cell = cell.around_cells[to_dir]
+                count += self.change_color_to_direction(next_cell, to_black, to_dir)
+
+        self.set_color(cell, to_black)
+        return count
+
+    def put(self, put_pos, to_black):
+        cell = self.cells[put_pos[0]][put_pos[1]]
+        self.put_to_cell(cell, to_black, False)
+
+    def put_click_pos(self, pos):
+        if pos == None:
+            return
+        if pos[0] < 0 or pos[1] < 0 or pos[0] > self.width or pos[1] > self.height:
+            return
+
+        put_pos = (int(pos[0] / self.cell_size[0]), int(pos[1] / self.cell_size[1]))
+        cell = self.cells[put_pos[0]][put_pos[1]]
+        if self.put_to_cell(cell , self.is_black_turn, True) > 0:
+            self.is_black_turn = not self.is_black_turn
+        else:
+            self.reset()
+
+    def put_random_cell(self):
+        putable_list = self.black_putable if self.is_black_turn else self.white_putable
+        if len(putable_list):
+            cell = random.sample(putable_list, 1)[0]
+            if self.put_to_cell(cell, self.is_black_turn, True) > 0:
+                self.is_black_turn = not self.is_black_turn
+                return
+            else:
+                raise Exception()
+        self.reset()
 
     def draw_grid(self):
         self.window.blit(self.background, (0, 0))
@@ -229,11 +248,11 @@ class Othello(BaseEnv):
             self.window.blit(self.sprite_white, cell.pos * self.cell_size)
 
     def draw_cell_info(self, cell: Cell, dir):
-        if cell.around_black.dir[dir]:
+        # if cell.around_black & (1 << dir):
+        if cell.around_black.bit[dir]:
             sprite = self.sprite_1
-            if cell.is_empty:
-                a = 10
-        elif cell.around_white.dir[dir]:
+        # elif cell.around_white & (1 << dir):
+        elif cell.around_white.bit[dir]:
             sprite = self.sprite_2
         else:
             sprite = self.sprite_0
