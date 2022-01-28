@@ -69,6 +69,7 @@ class Othello(BaseEnv):
         )
 
     def reset(self):
+        self.put_cell = None
         self.turn_count = 0
         self.is_black_turn = True
         self.black_putable.clear()
